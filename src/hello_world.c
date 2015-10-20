@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#define BACNET_INSTANCE_NO		64 // assigned device number
+#define BACNET_INSTANCE_NO		64 // Assigned device number
 #define BACNET_PORT			0xBAC1
 #define BACNET_INTERFACE		"lo"
 #define BACNET_DATALINK_TYPE		"bvlc"
@@ -25,45 +25,47 @@
 
 #if RUN_AS_BBMD_CLIENT
 
-#define BACNET_BBMD_PORT		0xBAC0
+#define BACNET_BBMD_PORT		0xBAC0	// Broadcast Management Device(BBMD)
 #define BACNET_BBMD_ADDRESS		"127.0.0.1"
 #define BACNET_BBMD_TTL			90
 #endif
 
-/* If you are trying out the test suite from home, this data matches the data
-* stored in RANDOM_DATA_POOL for device number 12
-* BACnet client will print "Successful match" whenever it is able to receive
-* this set of data. Note that you will not have access to the RANDOM_DATA_POOL
-* for your final submitted application. */
+	/* If you are trying out the test suite from home, this data matches the data
+	* stored in RANDOM_DATA_POOL for device number 12
+	* BACnet client will print "Successful match" whenever it is able to receive
+	* this set of data. Note that you will not have access to the RANDOM_DATA_POOL
+	* for your final submitted application. */
 
 static uint16_t test_data[] = {
-0xA4EC, 0x6E39, 0x8740, 0x1065, 0x9134, 0xFC8C };
+	0xA4EC, 0x6E39, 0x8740, 0x1065, 0x9134, 0xFC8C };
 #define NUM_TEST_DATA (sizeof(test_data)/sizeof(test_data[0]))
 
 static pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
-static int Update_Analog_Input_Read_Property(
-BACNET_READ_PROPERTY_DATA *rpdata) {
+
+static int Update_Analog_Input_Read_Property(BACNET_READ_PROPERTY_DATA *rpdata) {
+
 static int index;
+
 int instance_no = bacnet_Analog_Input_Instance_To_Index(
-rpdata->object_instance);
-if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) goto not_pv;
-printf("AI_Present_Value request for instance %i\n", instance_no);
+	rpdata->object_instance);
+	if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) goto not_pv;
+	printf("AI_Present_Value request for instance %i\n", instance_no);
 
-/* Update the values to be sent to the BACnet client here.
-* The data should be read from the head of a linked list. You are required
-* to implement this list functionality.
-*
-* bacnet_Analog_Input_Present_Value_Set()
-* First argument: Instance No
-* Second argument: data to be sent
-*
-* Without reconfiguring libbacnet, a maximum of 4 values may be sent */
+	/* Update the values to be sent to the BACnet client here.
+	* The data should be read from the head of a linked list. You are required
+	* to implement this list functionality.
+	*
+	* bacnet_Analog_Input_Present_Value_Set()
+	* First argument: Instance No
+	* Second argument: data to be sent
+	*
+	* Without reconfiguring libbacnet, a maximum of 4 values may be sent */
 
-bacnet_Analog_Input_Present_Value_Set(0, test_data[index++]);
-/* bacnet_Analog_Input_Present_Value_Set(1, test_data[index++]); */
-/* bacnet_Analog_Input_Present_Value_Set(2, test_data[index++]); */
-if (index == NUM_TEST_DATA) index = 0;
-not_pv:
+	bacnet_Analog_Input_Present_Value_Set(0, test_data[index++]);
+	/* bacnet_Analog_Input_Present_Value_Set(1, test_data[index++]); */
+	/* bacnet_Analog_Input_Present_Value_Set(2, test_data[index++]); */
+	if (index == NUM_TEST_DATA) index = 0;
+	not_pv:
 return bacnet_Analog_Input_Read_Property(rpdata);
 }
 
@@ -103,16 +105,16 @@ static bacnet_object_functions_t server_objects[] = {
 };
 
 static void register_with_bbmd(void) {
-#if RUN_AS_BBMD_CLIENT
+	#if RUN_AS_BBMD_CLIENT
 
-/* Thread safety: Shares data with datalink_send_pdu */
+	/* Thread safety: Shares data with datalink_send_pdu */
 
-bacnet_bvlc_register_with_bbmd(
-bacnet_bip_getaddrbyname(BACNET_BBMD_ADDRESS),
-htons(BACNET_BBMD_PORT),
-BACNET_BBMD_TTL);
-#endif
-}
+	bacnet_bvlc_register_with_bbmd(
+	bacnet_bip_getaddrbyname(BACNET_BBMD_ADDRESS),
+	htons(BACNET_BBMD_PORT),
+	BACNET_BBMD_TTL);
+	#endif
+	}
 
 static void *minute_tick(void *arg) {
 
@@ -136,117 +138,118 @@ static void *minute_tick(void *arg) {
 return arg;
 }
 
-/*//////// start modbus here
 
-uint16_t tab_reg[64];
-int rc;
-int i;
-int main(void)
-{
-/*Initialise Modbus Structure*/
-modbus_t *ctx;
-ctx = modbus_new_tcp(SERVER_ADDR, SERVER_PORT);
-if (ctx == NULL) {
-fprintf(stderr, "Unable to allocate libmodbus context\n"); //Error message if unable to execute command
-return -1;
-}
-if (modbus_connect(ctx) == -1) {
-fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-modbus_free(ctx);
-return -1;
-} else {
-fprintf(stderr, "Libmodbus Context Created\n");
-}
-/*Connect to Server*/
-if (modbus_connect(ctx) == -1) {
-fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-modbus_free(ctx);
-return -1;
-} else {
-fprintf(stderr, "Connection Successful\n");
-}
-/*Read Registers*/
-rc = modbus_read_registers(ctx, 12, 3, tab_reg);
-if (rc == -1) {
-fprintf(stderr, "Read Register Failed: %s\n",
-modbus_strerror(errno));
-return -1;
-}
-for (i = 0; i < rc; i++) {
-printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
-}
-/*Close and Free Connection*/
-modbus_close(ctx);
-modbus_free(ctx);
+	/*Initialise Modbus Structure*/
+
+static void *modbus_start(void *arg) {
+
+	modbus_t *ctx;
+	ctx = modbus_new_tcp(MODBUS_ADDR, MODBUS_PORT);
+
+		if (ctx == NULL) {
+		fprintf(stderr, "Unable to allocate libmodbus context\n"); //Error message 			if unable to execute command
+	return -1;
+	}
+		if (modbus_connect(ctx) == -1) {
+		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
+		modbus_free(ctx);
+	return -1;
+		} else {
+		fprintf(stderr, "Libmodbus Context Created\n");
+	}
+
+	/*Connect to Server*/
+		if (modbus_connect(ctx) == -1) {
+		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
+		modbus_free(ctx);
+	return -1;
+		} else {
+		fprintf(stderr, "Connection Successful\n");
+	}
+
+	/*Read Registers*/
+	rc = modbus_read_registers(ctx, 64, 3, tab_reg);
+		if (rc == -1) {
+		fprintf(stderr, "Read Register Failed: %s\n",
+		modbus_strerror(errno));
+	return -1;
+	}
+		for (i = 0; i < rc; i++) {
+		printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
+	}
+
+	/*Close and Free Connection*/
+	modbus_close(ctx);
+	modbus_free(ctx);
 return 0;
 }
-/*////////////////////////////
+/////////////
 
 static void ms_tick(void) {
 
-/* Updates change of value COV subscribers.
-* Required for SERVICE_CONFIRMED_SUBSCRIBE_COV
-* bacnet_handler_cov_task(); */
+	/* Updates change of value COV subscribers.
+	* Required for SERVICE_CONFIRMED_SUBSCRIBE_COV
+	* bacnet_handler_cov_task(); */
 }
 #define BN_UNC(service, handler) \
 	bacnet_apdu_set_unconfirmed_handler( \
-	SERVICE_UNCONFIRMED_##service, \
-	bacnet_handler_##handler)
+		SERVICE_UNCONFIRMED_##service, \
+		bacnet_handler_##handler)
 #define BN_CON(service, handler) \
 	bacnet_apdu_set_confirmed_handler( \
-	SERVICE_CONFIRMED_##service, \
-	bacnet_handler_##handler)
+		SERVICE_CONFIRMED_##service, \
+		bacnet_handler_##handler)
 
 int main(int argc, char **argv) {
-uint8_t rx_buf[bacnet_MAX_MPDU];
-uint16_t pdu_len;
-BACNET_ADDRESS src;
-pthread_t minute_tick_id, second_tick_id;
-bacnet_Device_Set_Object_Instance_Number(BACNET_INSTANCE_NO);
-bacnet_address_init();
+	uint8_t rx_buf[bacnet_MAX_MPDU];
+	uint16_t pdu_len;
+	BACNET_ADDRESS src;
+	pthread_t minute_tick_id, second_tick_id;
+	bacnet_Device_Set_Object_Instance_Number(BACNET_INSTANCE_NO);
+	bacnet_address_init();
 
-/* Setup device objects */
+	/* Setup device objects */
 
-bacnet_Device_Init(server_objects);
-BN_UNC(WHO_IS, who_is);
-BN_CON(READ_PROPERTY, read_property);
-bacnet_BIP_Debug = true;
-bacnet_bip_set_port(htons(BACNET_PORT));
-bacnet_datalink_set(BACNET_DATALINK_TYPE);
-bacnet_datalink_init(BACNET_INTERFACE);
-atexit(bacnet_datalink_cleanup);
-memset(&src, 0, sizeof(src));
-register_with_bbmd();
-bacnet_Send_I_Am(bacnet_Handler_Transmit_Buffer);
-pthread_create(&minute_tick_id, 0, minute_tick, NULL);
-pthread_create(&second_tick_id, 0, second_tick, NULL);
+	bacnet_Device_Init(server_objects);
+	BN_UNC(WHO_IS, who_is);
+	BN_CON(READ_PROPERTY, read_property);
+	bacnet_BIP_Debug = true;
+	bacnet_bip_set_port(htons(BACNET_PORT));
+	bacnet_datalink_set(BACNET_DATALINK_TYPE);
+	bacnet_datalink_init(BACNET_INTERFACE);
+	atexit(bacnet_datalink_cleanup);
+	memset(&src, 0, sizeof(src));
+	register_with_bbmd();
+	bacnet_Send_I_Am(bacnet_Handler_Transmit_Buffer);
+	pthread_create(&minute_tick_id, 0, minute_tick, NULL);
+	pthread_create(&second_tick_id, 0, second_tick, NULL);
 
-/* Start another thread here to retrieve your allocated registers from the
-* modbus server. This thread should have the following structure (in a
-* separate function):
-*
-* Initialise:
-* Connect to the modbus server
-*
-* Loop:
-* Read the required number of registers from the modbus server
-* Store the register data into the tail of a linked list
-*/
+	/* Start another thread here to retrieve your allocated registers from the
+	* modbus server. This thread should have the following structure (in a
+	* separate function):
+	*
+	* Initialise:
+	* Connect to the modbus server
+	*
+	* Loop:
+	* Read the required number of registers from the modbus server
+	* Store the register data into the tail of a linked list
+	*/
 
-while (1) {
-pdu_len = bacnet_datalink_receive(
-&src, rx_buf, bacnet_MAX_MPDU, BACNET_SELECT_TIMEOUT_MS);
-if (pdu_len) {
+	while (1) {
+	pdu_len = bacnet_datalink_receive(
+	&src, rx_buf, bacnet_MAX_MPDU, BACNET_SELECT_TIMEOUT_MS);
+	if (pdu_len) {
 
-/* May call any registered handler.
-* Thread safety: May block, however we still need to guarantee
-* atomicity with the timers, so hold the lock anyway */
+	/* May call any registered handler.
+	* Thread safety: May block, however we still need to guarantee
+	* atomicity with the timers, so hold the lock anyway */
 
-pthread_mutex_lock(&timer_lock);
-bacnet_npdu_handler(&src, rx_buf, pdu_len);
-pthread_mutex_unlock(&timer_lock);
-}
-ms_tick();
+	pthread_mutex_lock(&timer_lock);
+	bacnet_npdu_handler(&src, rx_buf, pdu_len);
+	pthread_mutex_unlock(&timer_lock);
+	}
+	ms_tick();
 }
 return 0;
 }
