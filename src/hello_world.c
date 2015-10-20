@@ -147,38 +147,40 @@ static void *modbus_start(void *arg) {
 	ctx = modbus_new_tcp(MODBUS_ADDR, MODBUS_PORT);
 
 		if (ctx == NULL) {
-		fprintf(stderr, "Unable to allocate modbus context\n"); //Error	message	if 			unable to execute command
+		fprintf(stderr, "Unable to allocate modbus context\n");  
 		return -1;
-	}  
+	   }
 		else{
 		fprintf(stderr, "Connection Successful\n");
-	}		
+           }
 	
 		/*Connect to Server*/
 		if (modbus_connect(ctx) == -1) {
 		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
 		modbus_free(ctx);	/*free modbus_t structure*/
 		return -1;
-	} 	
+           }
 		else {
 		fprintf(stderr, "Connection Successful\n");
-	}
+	   }
 		printf("starting loop"\n");
-	while(1){
+
+	  while(1){
+
 		/*Read Registers*/
 		rc = modbus_read_registers(ctx, 64, 3, tab_reg);
+
 		if (rc == -1) {
 		fprintf(stderr, "%s\n, modbus_strerror(errno));
 		return -1;
-	}
+	   }             
 		for (i = 0; i < rc; i++) {
 		printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
-	}
+	   }
 
 	usleep(100000);	
 	
-	}		
-	
+	}	
 
 	/*Close and Free Connection*/
 	modbus_close(ctx); 
