@@ -26,10 +26,10 @@
 #if RUN_AS_BBMD_CLIENT
 
 #define BACNET_BBMD_PORT		0xBAC0	// Broadcast Management Device(BBMD)
-#define BACNET_BBMD_ADDRESS		"127.0.0.1"
+#define BACNET_BBMD_ADDRESS		"140.159.160.7"
 #define BACNET_BBMD_TTL			90
 #endif
-
+#define MODBUS_ADDRESS 			"140.159.153.159"
 	/* If you are trying out the test suite from home, this data matches the data
 	* stored in RANDOM_DATA_POOL for device number 12
 	* BACnet client will print "Successful match" whenever it is able to receive
@@ -147,41 +147,43 @@ static void *modbus_start(void *arg) {
 	ctx = modbus_new_tcp(MODBUS_ADDR, MODBUS_PORT);
 
 		if (ctx == NULL) {
-		fprintf(stderr, "Unable to allocate libmodbus context\n"); //Error message 			if unable to execute command
-	return -1;
-	}
+		fprintf(stderr, "Unable to allocate modbus context\n"); //Error	message	if 			unable to execute command
+		return -1;
+	}  
+		else{
+		fprintf(stderr, "Connection Successful\n");
+	}		
+	
+		/*Connect to Server*/
 		if (modbus_connect(ctx) == -1) {
 		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-		modbus_free(ctx);
-	return -1;
-		} else {
-		fprintf(stderr, "Libmodbus Context Created\n");
-	}
-
-	/*Connect to Server*/
-		if (modbus_connect(ctx) == -1) {
-		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-		modbus_free(ctx);
-	return -1;
-		} else {
+		modbus_free(ctx);	/*free modbus_t structure*/
+		return -1;
+	} 	
+		else {
 		fprintf(stderr, "Connection Successful\n");
 	}
-
-	/*Read Registers*/
-	rc = modbus_read_registers(ctx, 64, 3, tab_reg);
+		printf("starting loop"\n");
+	while(1){
+		/*Read Registers*/
+		rc = modbus_read_registers(ctx, 64, 3, tab_reg);
 		if (rc == -1) {
-		fprintf(stderr, "Read Register Failed: %s\n",
-		modbus_strerror(errno));
-	return -1;
+		fprintf(stderr, "%s\n, modbus_strerror(errno));
+		return -1;
 	}
 		for (i = 0; i < rc; i++) {
 		printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
 	}
 
+	usleep(100000);	
+	
+	}		
+	
+
 	/*Close and Free Connection*/
-	modbus_close(ctx);
+	modbus_close(ctx); 
 	modbus_free(ctx);
-return 0;
+
 }
 /////////////
 
