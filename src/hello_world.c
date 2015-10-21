@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include <libbacnet/address.h>
 #include <libbacnet/device.h>
@@ -9,6 +11,7 @@
 #include <libbacnet/tsm.h>
 #include <libbacnet/ai.h>
 #include "bacnet_namespace.h"
+/*bacnet libraries*/
 #include <modbus-tcp.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -29,7 +32,9 @@
 #define BACNET_BBMD_ADDRESS		"140.159.160.7"
 #define BACNET_BBMD_TTL			90
 #endif
+
 #define MODBUS_ADDRESS 			"140.159.153.159"
+
 	/* If you are trying out the test suite from home, this data matches the data
 	* stored in RANDOM_DATA_POOL for device number 12
 	* BACnet client will print "Successful match" whenever it is able to receive
@@ -50,6 +55,51 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	rpdata->object_instance);
 	if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) goto not_pv;
 	printf("AI_Present_Value request for instance %i\n", instance_no);
+
+		-/* Linked list object */
+	typedef struct s_word_object word_object;
+	struct s_word_object {
+	 char *word;
+	 word_object *next;
+	};
+
+	/* list_head: Shared between two threads, must be accessed with list_lock */
+	static word_object *list_head;
+	static pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t list_data_ready = PTHREAD_COND_INITIALIZER;
+	static pthread_cond_t list_data_flush = PTHREAD_COND_INITIALIZER;
+
+	/* Add object to list */
+	static void add_to_list(char *word) {
+	 word_object *last_object, *tmp_object;
+	 char *tmp_string;
+
+	 /* Do all memory allocation outside of locking - strdup() and malloc() can
+	 * block */
+	 tmp_object = malloc(sizeof(word_object));
+	 tmp_string = strdup(word);
+
+	 /* Set up tmp_object outside of locking */
+	 tmp_object->word = tmp_string;
+	 tmp_object->next = NULL;
+
+	 pthread_mutex_lock(&list_lock);
+
+	 if (list_head == NULL) {
+	 /* The list is empty, just place our tmp_object at the head */
+	 list_head = tmp_object;
+	 } else {
+	 /* Iterate through the linked list to find the last object */
+	 last_object = list_head;
+	 while (last_object->next) {
+	 last_object = last_object->next;
+	 }
+	 /* Last object is now found, link in our tmp_object at the tail */
+	 last_object->next = tmp_object;
+	 }
+
+	 pthread_mutex_unlock(&list_lock);
+	 pthread_cond_signal(&list_data_ready);
 
 	/* Update the values to be sent to the BACnet client here.
 	* The data should be read from the head of a linked list. You are required
@@ -168,6 +218,7 @@ static void *modbus_start(void *arg) {
 	  while(1){
 
 		/*Read Registers*/
+
 		rc = modbus_read_registers(ctx, 64, 3, tab_reg);
 
 		if (rc == -1) {
