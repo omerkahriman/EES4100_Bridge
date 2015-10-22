@@ -45,8 +45,10 @@
 	* this set of data. Note that you will not have access to the RANDOM_DATA_POOL
 	* for your final submitted application. */
 
-static uint16_t test_data[] = {
-	0xA4EC, 0x6E39, 0x8740, 0x1065, 0x9134, 0xFC8C };
+//static uint16_t test_data[] = {
+	//0xA4EC, 0x6E39, 0x8740, 0x1065, 0x9134, 0xFC8C };
+
+
 
 #define NUM_TEST_DATA (sizeof(test_data)/sizeof(test_data[0]))
 
@@ -54,9 +56,10 @@ static pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int Update_Analog_Input_Read_Property(BACNET_READ_PROPERTY_DATA *rpdata) {
 
-static int index;
+	static int index;
+	word_object *current_object;
 
-int instance_no = bacnet_Analog_Input_Instance_To_Index(
+	int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	rpdata->object_instance);
 	if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) 
 	goto not_pv;
@@ -109,7 +112,28 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	 pthread_mutex_unlock(&list_lock);
 	 pthread_cond_signal(&list_data_ready);
 }
-
+	static void *print_func(void *arg){
+	word_object **list_head = (word_object **) arg;
+	word_object *current_object;
+	fprintf(stderr, "Print thread starting\n");
+	while (1) {
+		pthread_mutex_lock(&list_lock);
+		while (*list_head == NULL) {
+			pthread_cond_wait(&list_data_ready, &list_lock);
+			}
+			current_object = list_get_first(list_head);
+			pthread_mutex_unlock(&list_lock);
+	
+	//list_lock first */
+	printf("Print thread: %i\n", current_object->number);
+	//free(current_object->number);
+	free(current_object);
+	/* Let list_flush() know that we've done some work */
+	pthread_cond_signal(&list_data_flush);
+	}
+	/* Silence compiler warning */
+	return arg;
+}
 
 	/* Update the values to be sent to the BACnet client here.
 	* The data should be read from the head of a linked list. You are required
@@ -277,7 +301,8 @@ static void *modbus_start(void *arg) {
 			return NULL;
 	   }             
 		for (i = 0; i < rc; i++) {
-		printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
+			add_to_list(&listhead[i], tab_reg[i]);
+			printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
 	   }
 
 	usleep(100000);	
