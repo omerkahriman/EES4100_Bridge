@@ -43,6 +43,7 @@
 
 static uint16_t test_data[] = {
 	0xA4EC, 0x6E39, 0x8740, 0x1065, 0x9134, 0xFC8C };
+
 #define NUM_TEST_DATA (sizeof(test_data)/sizeof(test_data[0]))
 
 static pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -53,13 +54,16 @@ static int index;
 
 int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	rpdata->object_instance);
-	if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) goto not_pv;
+	if (rpdata->object_property != bacnet_PROP_PRESENT_VALUE) 
+	goto not_pv;
 	printf("AI_Present_Value request for instance %i\n", instance_no);
 
-		-/* Linked list object */
+#define NUM_LIST 3
+
+		-/* Linked list structure */
 	typedef struct s_word_object word_object;
 	struct s_word_object {
-	 char *word;
+	 int number;
 	 word_object *next;
 	};
 
@@ -70,37 +74,36 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	static pthread_cond_t list_data_flush = PTHREAD_COND_INITIALIZER;
 
 	/* Add object to list */
-	static void add_to_list(char *word) {
+	static void add_to_list(word_object **list_head, int number) {
 	 word_object *last_object, *tmp_object;
 	 char *tmp_string;
 
-	 /* Do all memory allocation outside of locking - strdup() and malloc() can
-	 * block */
+	 /* All memory allocation outside of locking */
 	 tmp_object = malloc(sizeof(word_object));
-	 tmp_string = strdup(word);
+	 //tmp_string = strdup(word);
 
 	 /* Set up tmp_object outside of locking */
-	 tmp_object->word = tmp_string;
+	 tmp_object->number = number;
 	 tmp_object->next = NULL;
 
 	 pthread_mutex_lock(&list_lock);
 
 	 if (list_head == NULL) {
 	 /* The list is empty, just place our tmp_object at the head */
-	 list_head = tmp_object;
+	 	*list_head = tmp_object;
 	 } else {
 	 /* Iterate through the linked list to find the last object */
-	 last_object = list_head;
-	 while (last_object->next) {
-	 last_object = last_object->next;
+	 	last_object = *list_head;
+		 while (last_object->next) {
+	 		last_object = last_object->next;
 	 }
 	 /* Last object is now found, link in our tmp_object at the tail */
-	 last_object->next = tmp_object;
+	 	last_object->next = tmp_object;
 	 }
 
 	 pthread_mutex_unlock(&list_lock);
 	 pthread_cond_signal(&list_data_ready);
-
+}
 	/* Update the values to be sent to the BACnet client here.
 	* The data should be read from the head of a linked list. You are required
 	* to implement this list functionality.
@@ -181,24 +184,64 @@ static void *minute_tick(void *arg) {
 	/* Update addresses for notification class recipient list
 	* Requred for INTRINSIC_REPORTING
 	* bacnet_Notification_Class_find_recipient(); */
+
 	/* Sleep for 1 minute */
 	pthread_mutex_unlock(&timer_lock);
 	sleep(60);
 }
 return arg;
 }
+static void *second_tick(void *arg){
 
+	while (1) {
+
+	pthread_mutex_lock(&timer_lock);
+
+	/* Invalidates stale BBMD foreign device table entries */
+	bacnet_bvlc_maintenance_timer(1);
+
+	/* Transaction state machine: Responsible for retransmissions and ack
+	* * checking for confirmed services */
+	bacnet_tsm_timer_milliseconds(1000);
+
+	/* Re-enables communications after DCC_Time_Duration_Seconds
+	* Required for SERVICE_CONFIRMED_DEVICE_COMMUNICATION_CONTROL
+	* bacnet_dcc_timer_seconds(1); */
+
+	/* State machine for load control object
+	* Required for OBJECT_LOAD_CONTROL
+	* bacnet_Load_Control_State_Machine_Handler(); */
+
+	/* Expires any COV subscribers that have finite lifetimes
+	* Required for SERVICE_CONFIRMED_SUBSCRIBE_COV
+	* bacnet_handler_cov_timer_seconds(1); */
+
+	/* Monitor Trend Log uLogIntervals and fetch properties
+	* Required for OBJECT_TRENDLOG
+	* bacnet_trend_log_timer(1); */
+
+	/* Run [Object_Type]_Intrinsic_Reporting() for all objects in device
+	* Required for INTRINSIC_REPORTING
+	* bacnet_Device_local_reporting(); */
+
+	/* Sleep for 1 second */
+	pthread_mutex_unlock(&timer_lock);
+	sleep(1);
+}
+return arg;
+}
 
 	/*Initialise Modbus Structure*/
 
 static void *modbus_start(void *arg) {
 
 	modbus_t *ctx;
+	start_modbus:
 	ctx = modbus_new_tcp(MODBUS_ADDR, MODBUS_PORT);
 
 		if (ctx == NULL) {
-		fprintf(stderr, "Unable to allocate modbus context\n");  
-		return -1;
+			fprintf(stderr, "Unable to allocate modbus context\n");  
+			return NULL;
 	   }
 		else{
 		fprintf(stderr, "Connection Successful\n");
@@ -206,9 +249,10 @@ static void *modbus_start(void *arg) {
 	
 		/*Connect to Server*/
 		if (modbus_connect(ctx) == -1) {
-		fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
-		modbus_free(ctx);	/*free modbus_t structure*/
-		return -1;
+			fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
+			modbus_free(ctx);	/*free modbus_t structure*/
+			sleep(1)
+			goto start_modbus;
            }
 		else {
 		fprintf(stderr, "Connection Successful\n");
@@ -217,13 +261,13 @@ static void *modbus_start(void *arg) {
 
 	  while(1){
 
-		/*Read Registers*/
+		/*Read the Registers*/
 
 		rc = modbus_read_registers(ctx, 64, 3, tab_reg);
 
 		if (rc == -1) {
-		fprintf(stderr, "%s\n, modbus_strerror(errno));
-		return -1;
+			fprintf(stderr, "%s\n, modbus_strerror(errno));
+			return NULL;
 	   }             
 		for (i = 0; i < rc; i++) {
 		printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
