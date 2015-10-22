@@ -11,13 +11,15 @@
 #include <libbacnet/tsm.h>
 #include <libbacnet/ai.h>
 #include "bacnet_namespace.h"
-/*bacnet libraries*/
 #include <modbus-tcp.h>
+#include <modbus.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #define BACNET_INSTANCE_NO		64 // Assigned device number
 #define BACNET_PORT			0xBAC1
@@ -33,7 +35,9 @@
 #define BACNET_BBMD_TTL			90
 #endif
 
-#define MODBUS_ADDRESS 			"140.159.153.159"
+#define MODBUS_ADDR 			"140.159.153.159"
+#define MODBUS_PORT			 502
+#define NUM_LIST 			3
 
 	/* If you are trying out the test suite from home, this data matches the data
 	* stored in RANDOM_DATA_POOL for device number 12
@@ -58,7 +62,7 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	goto not_pv;
 	printf("AI_Present_Value request for instance %i\n", instance_no);
 
-#define NUM_LIST 3
+
 
 		-/* Linked list structure */
 	typedef struct s_word_object word_object;
@@ -66,9 +70,10 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	 int number;
 	 word_object *next;
 	};
+	
+	static word_object *list_head[NUM_LIST];
 
-	/* list_head: Shared between two threads, must be accessed with list_lock */
-	static word_object *list_head;
+	/* list_lock */
 	static pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t list_data_ready = PTHREAD_COND_INITIALIZER;
 	static pthread_cond_t list_data_flush = PTHREAD_COND_INITIALIZER;
@@ -104,6 +109,8 @@ int instance_no = bacnet_Analog_Input_Instance_To_Index(
 	 pthread_mutex_unlock(&list_lock);
 	 pthread_cond_signal(&list_data_ready);
 }
+
+
 	/* Update the values to be sent to the BACnet client here.
 	* The data should be read from the head of a linked list. You are required
 	* to implement this list functionality.
@@ -257,11 +264,11 @@ static void *modbus_start(void *arg) {
 		else {
 		fprintf(stderr, "Connection Successful\n");
 	   }
-		printf("starting loop"\n");
+		printf("starting loop\n");
 
 	  while(1){
 
-		/*Read the Registers*/
+		//Read the Registers
 
 		rc = modbus_read_registers(ctx, 64, 3, tab_reg);
 
