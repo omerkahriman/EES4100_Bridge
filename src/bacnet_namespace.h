@@ -8,6 +8,7 @@
 #define bacnet_Analog_Input_Encode_Value_List Analog_Input_Encode_Value_List
 #define bacnet_Analog_Input_Index_To_Instance Analog_Input_Index_To_Instance
 #define bacnet_Analog_Input_Init Analog_Input_Init
+#define bacnet_Analog_Input_Instance_To_Index Analog_Input_Instance_To_Index
 #define bacnet_Analog_Input_Intrinsic_Reporting Analog_Input_Intrinsic_Reporting
 #define bacnet_Analog_Input_Object_Name Analog_Input_Object_Name
 #define bacnet_Analog_Input_Present_Value_Set Analog_Input_Present_Value_Set
@@ -68,5 +69,3 @@
 #define bacnet_tsm_invoke_id_failed tsm_invoke_id_failed
 #define bacnet_tsm_invoke_id_free tsm_invoke_id_free
 #define bacnet_tsm_timer_milliseconds tsm_timer_milliseconds
-
-

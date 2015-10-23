@@ -1,1 +1,1 @@
-SUBDIRS = scripts common src
+SUBDIRS = scripts src

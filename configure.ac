@@ -18,7 +18,6 @@ AC_SEARCH_LIBS([pthread_create], [pthread], [],
 AC_CONFIG_FILES([
     Makefile
     scripts/Makefile
-    common/Makefile
     src/Makefile
     
 ])

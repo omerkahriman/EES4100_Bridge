@@ -167,13 +167,13 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/init_user/week_7/hello_world/config/missing aclocal-1.14
+ACLOCAL = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/missing aclocal-1.14
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
 AR = ar
-AUTOCONF = ${SHELL} /home/init_user/week_7/hello_world/config/missing autoconf
-AUTOHEADER = ${SHELL} /home/init_user/week_7/hello_world/config/missing autoheader
-AUTOMAKE = ${SHELL} /home/init_user/week_7/hello_world/config/missing automake-1.14
+AUTOCONF = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/missing autoconf
+AUTOHEADER = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/missing autoheader
+AUTOMAKE = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/missing automake-1.14
 AWK = gawk
 BACNET_CFLAGS = -DBACDL_ALL 
 BACNET_LIBS = -L/usr/lib -lbacnet -lm 
@@ -209,7 +209,7 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
-MAKEINFO = ${SHELL} /home/init_user/week_7/hello_world/config/missing makeinfo
+MAKEINFO = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /bin/mkdir -p
 MODBUS_CFLAGS = -I/usr/include/modbus 
@@ -237,10 +237,10 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 0.1
-abs_builddir = /home/init_user/week_7/hello_world/src
-abs_srcdir = /home/init_user/week_7/hello_world/src
-abs_top_builddir = /home/init_user/week_7/hello_world
-abs_top_srcdir = /home/init_user/week_7/hello_world
+abs_builddir = /home/init_user/week_7/EES4100_Bridge/src
+abs_srcdir = /home/init_user/week_7/EES4100_Bridge/src
+abs_top_builddir = /home/init_user/week_7/EES4100_Bridge
+abs_top_srcdir = /home/init_user/week_7/EES4100_Bridge
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
@@ -269,7 +269,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/init_user/week_7/hello_world/config/install-sh
+install_sh = ${SHELL} /home/init_user/week_7/EES4100_Bridge/config/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -293,7 +293,10 @@ AM_CFLAGS = -Wall
 hello_world_SOURCES = hello_world.c
 hello_world_CFLAGS = $(AM_CFLAGS) $(MODBUS_CFLAGS) $(BACNET_CFLAGS)
 hello_world_LDADD = $(AM_LIBS) $(MODBUS_LIBS) $(BACNET_LIBS)
-all: all-am
+BUILT_SOURCES = bacnet_namespace.h .bacnet_dependent_src_stamp
+EXTRA_DIST = bacnet_api_names
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
@@ -514,13 +517,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -550,6 +555,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
@@ -620,7 +626,7 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
@@ -636,6 +642,13 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
 
+
+.bacnet_dependent_src_stamp: bacnet_api_names $(BACNET_DEPENDENT_SRC)
+	cat $< | $(top_srcdir)/scripts/check_namespace.sh $< $?
+	touch $@
+
+bacnet_namespace.h: bacnet_api_names
+	cat $< | $(top_srcdir)/scripts/build_namespace.sh > $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
