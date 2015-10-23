@@ -51,16 +51,18 @@ static void add_to_list(word_object ** list_head, uint16_t number){
 	word_object *last_object, *tmp_object;
 	tmp_object = malloc(sizeof(word_object)); 
 	tmp_object->number = number;
-	tmp_object->next = NULL;
+	tmp_object->next = NULL;// make the tmp the last object
 
 	pthread_mutex_lock(&list_lock);
 	if (*list_head == NULL) { 
-	*list_head = tmp_object; 
+	*list_head = tmp_object; //list is empty place tmp at the head
 	} else {
+	/* Iterate through the linked list to find the last object */
 		last_object = *list_head; 
 		while (last_object->next) { 
 		last_object = last_object->next;
 		}
+	/* Last object found, link in tmp_object at the tail */
 		last_object->next = tmp_object; 
 		}
 	pthread_mutex_unlock(&list_lock);
@@ -220,7 +222,7 @@ static void *modbus_start(void *arg)
 	}
 	/*Read the registers*/
 	while(1) {
-	rc = modbus_read_registers(ctx, 64, 2, tab_reg);
+	rc = modbus_read_registers(ctx, 64, 2, tab_reg);/* assigned device no and instance*/
 
 		if (rc == -1) {
 		   fprintf(stderr, "Reading of the registers has failed:%s\n",
@@ -257,10 +259,12 @@ static void *modbus_start(void *arg)
 	SERVICE_CONFIRMED_##service, \
 	bacnet_handler_##handler)
 
+/*Main function*/
 int main(int argc, char **argv)
 {
 uint8_t rx_buf[bacnet_MAX_MPDU];
 uint16_t pdu_len;
+	/*initialize bacnet stack*/
 	BACNET_ADDRESS src;
 	pthread_t minute_tick_id, second_tick_id;
 	pthread_t modbus_start_id;
