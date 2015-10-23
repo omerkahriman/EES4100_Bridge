@@ -91,8 +91,7 @@ hello_world-hello_world.o: hello_world.c /usr/include/stdc-predef.h \
  /usr/include/bits/posix2_lim.h /usr/include/bits/param.h \
  /usr/include/linux/param.h /usr/include/asm/param.h \
  /usr/include/asm-generic/param.h /usr/include/modbus/modbus-version.h \
- /usr/include/modbus/modbus-tcp.h /usr/include/modbus/modbus-rtu.h \
- /usr/include/modbus/modbus.h
+ /usr/include/modbus/modbus-tcp.h /usr/include/modbus/modbus-rtu.h
 
 /usr/include/stdc-predef.h:
 
@@ -463,5 +462,3 @@ bacnet_namespace.h:
 /usr/include/modbus/modbus-tcp.h:
 
 /usr/include/modbus/modbus-rtu.h:
-
-/usr/include/modbus/modbus.h:
