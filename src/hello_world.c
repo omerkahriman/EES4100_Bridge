@@ -16,27 +16,27 @@
 #include <errno.h>
 #include <netinet/in.h>
 
-#define SERVER				"127.0.0.1"
-//#define SERVER                                "140.159.153.159"
+//#define SERVER	  		"127.0.0.1"
+#define SERVER                         "140.159.153.159"
 #define PORT 				502
 #define BACNET_DEVICE_NO 		64	//Assigned Device Number
 #define BACNET_PORT 			0xBAC1
 #define BACNET_INTERFACE 		"lo"
 #define BACNET_DATALINK_TYPE		"bvlc"
-#define BACNET_SELECT_TIMEOUT_MS 1	/* ms */
+#define BACNET_SELECT_TIMEOUT_MS        1	/* ms */
 #define RUN_AS_BBMD_CLIENT 		1
 #define NUMBER_OF_INSTANCES 		2
 
 #if RUN_AS_BBMD_CLIENT
 #define BACNET_BBMD_PORT 		0xBAC0
-#define BACNET_BBMD_ADDRESS 	        "127.0.0.1"
-//#define BACNET_BBMD_ADDRESS           "140.159.160.7"
+//#define BACNET_BBMD_ADDRESS 	        "127.0.0.1"
+#define BACNET_BBMD_ADDRESS             "140.159.160.7"
 #define BACNET_BBMD_TTL 		90
 #endif
 
 
-typedef struct s_word_object word_object;	/*Linked List Object */
-/* define structure containing a number and a pointer*/
+typedef struct s_word_object word_object;	//Linked List Object 
+// define structure containing a number and a pointer
 struct s_word_object {
     uint16_t number;
     word_object *next;
@@ -60,19 +60,19 @@ static void add_to_list(word_object ** list_head, uint16_t number)
     if (*list_head == NULL) {
 	*list_head = tmp_object;    		//List is empty place tmp_object at the head
     } else {
-	/* Iterate through the linked list to find the last object */
+	// Iterate through the linked list to find the last object 
 	last_object = *list_head;
 	while (last_object->next) {
 	    last_object = last_object->next;
 	}
-	/* Last object found, link in tmp_object at the tail */
+	// Last object found, link in tmp_object at the tail 
 	last_object->next = tmp_object;
     }
     pthread_mutex_unlock(&list_lock);
     pthread_cond_signal(&list_data_ready);
 }
 
-	/*list head object */
+	//list head object 
 static word_object *list_get_first(word_object ** list_head)
 {
     word_object *first_object;
@@ -204,7 +204,7 @@ static void *second_tick(void *arg)
 }
 
 
-	/*Modbus starts */
+	//Modbus starts here
 static void *modbus_start(void *arg)
 {
     uint16_t tab_reg[64];
@@ -214,12 +214,12 @@ static void *modbus_start(void *arg)
   restart:
     ctx = modbus_new_tcp(SERVER, PORT);
 
-    /*Establish a connection using the modbus_t structure */
-    if (modbus_connect(ctx) == -1)         //Connection the server failed
+    //Establish a connection using the modbus_t structure
+    if (modbus_connect(ctx) == -1)      //Connection the server failed
     {
 	fprintf(stderr, "Connection to server unsuccesful:%s\n",
 		modbus_strerror(errno));
-	modbus_free(ctx);	/*free modbus_t structure */
+	modbus_free(ctx);	//free modbus_t structure
 	modbus_close(ctx);
 	sleep(1);
 	goto restart;
@@ -227,9 +227,9 @@ static void *modbus_start(void *arg)
     } else {
 	fprintf(stderr, "Connection to server succesful\n");
     }
-    /*Read the registers */
+    //Read the registers 
     while (1) {
-	rc = modbus_read_registers(ctx, 64, 2, tab_reg);	/* Assigned device number and instance */
+	rc = modbus_read_registers(ctx, 64, 2, tab_reg)	// Assigned device number and instance
 
 	if (rc == -1)         //Reading of registers failed
 	{
@@ -250,7 +250,7 @@ static void *modbus_start(void *arg)
     return NULL;
 }
 
-	/*End of Modbus */
+	//End of Modbus
 
 static void ms_tick(void)
 {
