@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 
-//#define SERVER	  		"127.0.0.1"
+//#define SERVER        	       "127.0.0.1" //This is for testing
 #define SERVER                         "140.159.153.159"
 #define PORT 				502
 #define BACNET_DEVICE_NO 		64	//Assigned Device Number
@@ -54,11 +54,11 @@ static void add_to_list(word_object ** list_head, uint16_t number)
     word_object *last_object, *tmp_object;
     tmp_object = malloc(sizeof(word_object));
     tmp_object->number = number;
-    tmp_object->next = NULL;                    // Make the tmp the last object
+    tmp_object->next = NULL;               // Make the tmp the last object
 
     pthread_mutex_lock(&list_lock);
     if (*list_head == NULL) {
-	*list_head = tmp_object;    		//List is empty place tmp_object at the head
+	*list_head = tmp_object;          //List is empty place tmp_object at the head
     } else {
 	// Iterate through the linked list to find the last object 
 	last_object = *list_head;
@@ -203,7 +203,6 @@ static void *second_tick(void *arg)
     return arg;
 }
 
-
 	//Modbus starts here
 static void *modbus_start(void *arg)
 {
@@ -219,7 +218,7 @@ static void *modbus_start(void *arg)
     {
 	fprintf(stderr, "Connection to server unsuccesful:%s\n",
 		modbus_strerror(errno));
-	modbus_free(ctx);	//free modbus_t structure
+	modbus_free(ctx);	//Free modbus_t structure
 	modbus_close(ctx);
 	sleep(1);
 	goto restart;
@@ -229,7 +228,7 @@ static void *modbus_start(void *arg)
     }
     //Read the registers 
     while (1) {
-	rc = modbus_read_registers(ctx, 64, 2, tab_reg)	// Assigned device number and instance
+	rc = modbus_read_registers(ctx, 64, 2, tab_reg);  // Assigned device number and instance
 
 	if (rc == -1)         //Reading of registers failed
 	{
